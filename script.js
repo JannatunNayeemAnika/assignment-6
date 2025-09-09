@@ -1,213 +1,180 @@
-// Globals variable and functions
-const catagoryButtons = document.getElementsByClassName("removeCatarogyDesign");
+const categoryContainer = document.getElementById("categoryContainer");
+const cardContainer = document.getElementById("cardContainer");
+const modalContainer = document.getElementById("modalContainer");
+const cartContainer = document.getElementById("cartContainer");
+const priceContainer = document.getElementById("priceContainer");
+const totalPriceEl = document.getElementById("totalPrice");
+let totalPrice = 0;
+const loadingSpinner = document.getElementById("loadingSpinner");
+const allItem = document.getElementById("allItem");
 
-const removeBgOfCatagory = () => {
-  for (const catagorybutton of catagoryButtons) {
-    catagorybutton.classList.remove("CatagoryButtonD");
-  }
-};
-
-const catagoryLoad = async () => {
-  const res = await fetch(
-    "https://openapi.programming-hero.com/api/categories"
-  );
-  const data = await res.json();
-  displayCatagory(data.categories);
-  // console.log(data.);
-};
-
-// All Catagory plants here
-
-// spinbar here
-const spinbar = (situation) => {
-  if (situation == true) {
-    document.getElementById("spinbar").classList.remove("hidden");
-    document.getElementById("Product-container").classList.add("hidden");
-  } else {
-    document.getElementById("spinbar").classList.add("hidden");
-    document.getElementById("Product-container").classList.remove("hidden");
-  }
-};
-
-const allplantsLoad = () => {
-  spinbar(true);
-  const url = "https://openapi.programming-hero.com/api/plants";
-  fetch(url)
+// Load Categories
+const loadCategory = () => {
+  fetch("https://openapi.programming-hero.com/api/categories")
     .then((res) => res.json())
-    .then((data) => {
-      displayProducts(data.plants);
-    });
-  //   spinbar(false);
-  // console.log(data.plants);
+    .then((data) => displayCategory(data.categories));
 };
-// all tree button here
-const alltreeBtn = document.getElementById("allTreeBtn");
-alltreeBtn.addEventListener("click", () => {
-  removeBgOfCatagory();
-  alltreeBtn.classList.add("CatagoryButtonD");
+// Display Category
+const displayCategory = (categories) => {
+  categories.forEach((category) => {
+    categoryContainer.innerHTML += `
+      <li id="${category.id}" class="hover:bg-green-600 hover:text-white p-1">${category.category_name}s</li>
+    `;
+  });
+};
 
-  allplantsLoad();
+// Load All Plants
+const loadAllPlants = () => {
+  manageSpinner(true);
+  fetch("https://openapi.programming-hero.com/api/plants")
+    .then((res) => res.json())
+    .then((data) => displayAllPlants(data.plants));
+};
+// Display all Plants
+const displayAllPlants = (allPlants) => {
+  cardContainer.innerHTML = "";
+  allPlants.forEach((plant) => {
+    cardContainer.innerHTML += `
+      <div class="bg-white p-2 rounded space-y-2 flex flex-col justify-between">
+        <img class="w-full h-52 object-cover rounded" src="${plant.image}" alt="tree image" />
+        <button onclick="loadPlantDetails(${plant.id})" class='font-semibold'>${plant.name}</button>
+        <p class='text-sm'>${plant.description}</p>
+        <div class="flex justify-between items-center">
+          <button class=" bg-[#bed9c7] text-green-800 text-sm p-1 md:py-2 px-3 rounded-3xl">${plant.category}</button>
+          <p><i class="fa-solid fa-bangladeshi-taka-sign"></i><span>${plant.price}</span></p>
+        </div>
+        <button class="w-full bg-green-800 text-white p-2 rounded-2xl">Add to Cart</button>
+      </div>
+    `;
+  });
+  manageSpinner(false);
+};
+
+// Load Plants by Category
+const loadPlantsByCategory = (id) => {
+  manageSpinner(true);
+  fetch(`https://openapi.programming-hero.com/api/category/${id}`)
+    .then((res) => res.json())
+    .then((data) => displayPlantsByCategory(data.plants));
+};
+// Display Plants by category
+const displayPlantsByCategory = (plants) => {
+  cardContainer.innerHTML = "";
+  plants.forEach((plant) => {
+    cardContainer.innerHTML += `
+      <div class="bg-white p-2 rounded space-y-2 flex flex-col justify-between">
+        <img class="w-full h-52 object-cover rounded" src="${plant.image}" alt="${plant.name}" />
+        <p onclick="loadPlantDetails(${plant.id})" class='font-semibold cursor-pointer inline'>${plant.name}</p>
+        <p class='text-sm flex-grow'>${plant.description}</p>
+        <div class="flex justify-between">
+          <button class="bg-[#bed9c7] text-green-800 text-sm p-1 md:py-2 px-3 rounded-3xl">${plant.category}</button>
+          <p><i class="fa-solid fa-bangladeshi-taka-sign"></i> <span>${plant.price}</span></p>
+        </div>
+        <button class="w-full bg-green-800 text-white md:p-2 my-2 rounded-2xl">Add to Cart</button>
+      </div>
+    `;
+  });
+  manageSpinner(false);
+};
+
+// Load Plant Details (Modal)
+const loadPlantDetails = (id) => {
+  fetch(`https://openapi.programming-hero.com/api/plant/${id}`)
+    .then((res) => res.json())
+    .then((data) => displayPlantDetails(data.plants));
+};
+// Display Plant Details (Modal)
+const displayPlantDetails = (plant) => {
+  modalContainer.innerHTML = `
+    <div class="bg-white p-2 rounded space-y-2 flex flex-col justify-between">
+      <p class='font-semibold'>${plant.name}</p>
+      <img class="w-full h-52 object-cover rounded" src="${plant.image}" alt="${plant.name}" />
+      <p class='font-semibold'>Category: ${plant.category}</p>
+      <p>Price: <i class="fa-solid fa-bangladeshi-taka-sign"></i> <span class="font-bold">${plant.price}</span></p>
+      <p class='text-sm flex-grow'><span class="font-bold">Description:</span> ${plant.description}</p>
+    </div>
+  `;
+  document.getElementById("my_modal_5").showModal();
+};
+
+// Category Container Click
+categoryContainer.addEventListener("click", (e) => {
+  const allLi = categoryContainer.querySelectorAll("li");
+  allLi.forEach((li) => li.classList.remove("bg-green-600", "text-white"));
+  if (e.target.tagName === "LI")
+    e.target.classList.add("bg-green-600", "text-white");
+
+  const categoryId = e.target.id;
+  loadPlantsByCategory(categoryId);
 });
-allplantsLoad();
 
-// Catagory Display here
-const displayCatagory = (datas) => {
-  // console.log(data);
-  const catagoryContainer = document.getElementById("CatagoryLeft");
-  datas.forEach((data) => {
-    catagoryContainer.innerHTML += `
-        <button  onclick="loadProducts(${data.id})" id="${data.id}"  class=" bg-[#DCFCE7] border-none font-medium py-2 my-2 text-[#1F2937] cursor-default w-full text-left hover:bg-[#15803D] px-2 rounded-md removeCatarogyDesign ">
-     ${data.category_name}
-    </button>
-        `;
-  });
+// Card Container Click (Add to Cart)
+cardContainer.addEventListener("click", (e) => {
+  if (e.target.innerText === "Add to Cart") {
+    const cardTitle = e.target.parentNode.children[1].innerText;
+    const price = e.target.parentNode.children[3].children[1].innerText;
+    alert(`${cardTitle} has been added to the cart`);
+    addToCart(cardTitle, price);
+    priceContainer.classList.remove("hidden");
+    priceContainer.classList.add("block");
+  }
+});
+
+// Cart Item Add
+const addToCart = (cardTitle, price) => {
+  price = Number(price);
+  totalPrice += price;
+
+  const itemDiv = document.createElement("div");
+  itemDiv.classList.add(
+    "flex",
+    "justify-between",
+    "items-center",
+    "bg-green-100",
+    "rounded",
+    "border-b",
+    "border-gray-400",
+    "p-2",
+    "m-1"
+  );
+
+  itemDiv.innerHTML = `
+    <div>
+      <p>${cardTitle}</p>
+      <p class="text-sm font-semibold">&#2547; <span class="item-price">${price}</span></p>
+    </div>
+    <div>
+      <i class="fa-solid fa-xmark remove-item" style="color: #dc0909; cursor:pointer;"></i>
+    </div>
+  `;
+
+  cartContainer.insertBefore(itemDiv, priceContainer);
+  totalPriceEl.innerText = totalPrice;
 };
 
-// products load here
-const loadProducts = async (id) => {
-  spinbar(true);
+// Cart Remove
+cartContainer.addEventListener("click", (e) => {
+  if (e.target.classList.contains("remove-item")) {
+    const itemDiv = e.target.parentNode.parentNode;
+    const itemPrice = Number(itemDiv.querySelector(".item-price").innerText);
+    totalPrice -= itemPrice;
+    totalPriceEl.innerText = totalPrice;
+    itemDiv.remove();
+  }
+});
 
-  removeBgOfCatagory();
-  productUrl = `https://openapi.programming-hero.com/api/category/${id}`;
-  const res = await fetch(productUrl);
-  const data = await res.json();
-  //   console.log(data);
-  displayProducts(data.plants);
-  //   modalFunc(data.plants)
-
-  document.getElementById(id).classList.add("CatagoryButtonD");
+// Manage Spinner
+const manageSpinner = (status) => {
+  if (status) {
+    loadingSpinner.classList.remove("hidden");
+    cartContainer.classList.add("hidden");
+  } else {
+    loadingSpinner.classList.add("hidden");
+    cartContainer.classList.remove("hidden");
+  }
 };
 
-// products display here
-const displayProducts = (products) => {
-  const productContainer = document.getElementById("Product-container");
+// By Default All Items Button Highlight
 
-  productContainer.innerHTML = "";
-  products.forEach((product) => {
-    // console.log(product)
-    const newProduct = document.createElement("div");
-    newProduct.innerHTML = `
-    <div class="rounded-lg bg-white p-4  ">
-            <img class="h-48 w-full object-cover rounded-lg" src="${product.image}" alt="" />
-            <h3 onclick="modalFunc(${product.id})" class="font-semibold text-sm text-[#1F2937] cursor-pointer mt-3">
-              ${product.name}
-            </h3>
-            <p class="text-[12px] text-[#71717A] my-2  line-clamp-2">
-              ${product.description}
-            </p>
-            <div class="flex justify-between items-center">
-              <h3 class="bg-[#DCFCE7] px-3 py-1 rounded-full text-[#15803D]">
-                ${product.category}
-              </h3>
-              <h3 class="text-[#1F2937]">৳ <span>${product.price}</span></h3>
-            </div>
-            <button onclick="CartFunc(${product.id})"
-              class="bg-[#15803D] text-white font-medium text-[16px] w-full rounded-full mt-3 py-3"
-            >
-              Add to Cart
-            </button>
-          </div>
-    `;
-    productContainer.appendChild(newProduct);
-  });
-  spinbar(false);
-};
-
-const modalFunc = (id) => {
-  fetch(`https://openapi.programming-hero.com/api/plant/${id}`)
-    .then((res) => res.json())
-    .then((data) => {
-      displayModal(data.plants);
-    });
-};
-
-const displayModal = (data) => {
-  // const modalDetails = document.getElementById("modalDetails");
-  const modalDetails = document.getElementById("my_modal_5");
-  modalDetails.innerHTML = " ";
-  const newModalDetails = document.createElement("div");
-  newModalDetails.innerHTML = `
-  <div class="modal-box">
-<div class="rounded-lg bg-white p-2  ">
-            <img class="w-full object-cover rounded-lg" src="${data.image}" alt="" />
-            <h3  class="font-semibold text-sm text-[#1F2937] mt-3">
-              ${data.name}
-            </h3>
-            <p class="text-[16px] text-[#1d1d1f] my-3 ">
-              ${data.description}
-            </p>
-            <div class="flex justify-between items-center">
-              <h3 class="bg-[#DCFCE7] px-3 py-2 rounded-full text-[#15803D]">
-                ${data.category}
-              </h3>
-              <h3 class="text-[#1F2937]">৳ <span>${data.price}</span></h3>
-            </div>
-           
-           
-          </div>
-          <div class="modal-action">
-                <form method="dialog">
-                  <!-- if there is a button in form, it will close the modal -->
-                  <button class="btn">Close</button>
-                </form>
-              </div>
-              </div>
-
-
-`;
-  modalDetails.appendChild(newModalDetails);
-
-  document.getElementById("my_modal_5").showModal(data);
-};
-
-// Cart Funcload
-const CartFunc = (id) => {
-  fetch(`https://openapi.programming-hero.com/api/plant/${id}`)
-    .then((res) => res.json())
-    .then((data) => {
-      Storecart(data.plants);
-    });
-};
-
-const Storecart = (data) => {
-  const cartContainer = document.getElementById("carContainer");
-  const newCartItem = document.createElement("div");
-  newCartItem.id = `cartItems${data.id}`;
-  newCartItem.innerHTML = `
-    <div id="Cart${data.id}" class="cartItem flex justify-between items-center bg-[#F0FDF4] rounded-lg space-y-1 mb-2 py-2">
-             <div>
-                <h3 class="text-[#1F2937] text-sm font-semibold ">৳ <span>${data.name}</span></h3>
-             <h3  class="text-[#8C8C8C]">৳ <span >${data.price}</span> × 1 </h3>
-             </div>
-             <button onclick="delAmount(${data.id},${data.price})"><i class="fa-solid fa-xmark text-3xl"></i></button>
-         </div> 
-    
-    `;
-  cartContainer.appendChild(newCartItem);
-
-  const totalAmountElement = document.getElementById("totalAmount");
-  let totalAmount = parseInt(totalAmountElement.innerText);
-  totalAmount += parseInt(data.price);
-  totalAmountElement.innerText = totalAmount;
-
-  // removeAfterAmount=(`${data.price}`)
-};
-
-const delAmount = (id, price) => {
-  console.log(id);
-
-  const CartItem = document.getElementById(`cartItems${id}`);
-  console.log(CartItem);
-  //  CartItem.innerHTML=""
-  //  console.log(CartItem)
-  const remCartItem = document.getElementById(`Cart${id}`);
-  CartItem.removeChild(remCartItem);
-
-  const totalAmountElement = document.getElementById("totalAmount");
-  let totalAmount = parseInt(totalAmountElement.innerText);
-  totalAmount -= parseInt(price);
-  totalAmountElement.innerText = totalAmount;
-
-};
-
-catagoryLoad();
+loadCategory();
+loadAllPlants();
